@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dwarshb.firebase.Firebase
 import com.dwarshb.firebase.FirebaseDatabase
+import com.dwarshb.firebase.Gemini
 import com.dwarshb.firebase.onCompletion
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
@@ -61,6 +63,7 @@ fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
     val personalities = listOf("Friendly", "Professional", "Humorous", "Empathetic", "Creative")
 
     val database = FirebaseDatabase()
+    val gemini = Gemini()
     val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -166,50 +169,79 @@ fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        var dialog by remember { mutableStateOf(false) }
+        var buttonText by remember { mutableStateOf("Create Persona") }
+        var prompt by remember { mutableStateOf("") }
         // Create Persona Button
         Button(
+            enabled = !dialog,
             onClick = {
-                val persona = Persona(
-                    id =  personaId,
-                    name = personaName.text,
-                    description = personaDescription.text,
-                    personality = personalityTrait.text,
-                    personalityPrompt = "",
-                    createdBy = Firebase.getCurrentUser()?.uid?:"",
-                    createdAt = Clock.System.now().toEpochMilliseconds()
-                )
-                createPersona(database,coroutineScope,persona) {
-                    if (it!=null) {
-                        onPersonaCreated(it)
+                buttonText = "Generating Prompt"
+                dialog = true
+                coroutineScope.launch {
+                    gemini.generatePrompt(
+                        "Create a persona prompt based on the following: " +
+                                "Name: $personaName \n" +
+                                "Description: $personaDescription \n" +
+                                "Personality: $selectedPersonality \n" +
+                                "Respond only with the generated prompt.",
+                        object : onCompletion<String> {
+                            override fun onSuccess(t: String) {
+                                prompt = t
+                                buttonText = "Prompt Created"
+                            }
+
+                            override fun onError(e: Exception) {
+                                e.printStackTrace()
+                                dialog = false
+                            }
+                        })
+                    if (dialog) {
+                        val persona = Persona(
+                            id = personaId,
+                            name = personaName.text,
+                            description = personaDescription.text,
+                            personality = selectedPersonality,
+                            personalityPrompt = prompt,
+                            createdBy = Firebase.getCurrentUser()?.uid ?: "",
+                            createdAt = Clock.System.now().toEpochMilliseconds()
+                        )
+                        buttonText += "\n Creating Persona"
+                        createPersona(database, persona) {
+                            dialog = false
+                            if (it != null) {
+                                onPersonaCreated(it)
+                            }
+                        }
                     }
                 }
             },
             modifier = Modifier.padding(8.dp)
         ) {
-            Text("Create Persona")
+            if (dialog) CircularProgressIndicator(color = Color.White)
+            else buttonText = "Create Persona"
+            Text(buttonText)
         }
     }
 }
 
 // Function to handle persona creation (e.g., save to the database, Firebase)
-fun createPersona(database: FirebaseDatabase,coroutineScope: CoroutineScope,
-                  persona: Persona, onPersonaCreated: (Persona?)->Unit) {
+suspend fun createPersona(database: FirebaseDatabase, persona: Persona,
+                          onPersonaCreated: (Persona?)->Unit) {
     // Here you can save the persona data to Firebase, database, etc.
     // For example, send a POST request to save the persona data
-    // Note: You could later update this with real-time data handling or session management
-    coroutineScope.launch {
-        val params = HashMap<String,Any>()
-        params.put(persona.id,persona)
-        database.patchFirebaseDatabase(listOf("persona"),params,
-            object : onCompletion<String>{
-                override fun onError(e: Exception) {
-                    e.printStackTrace()
-                }
 
-                override fun onSuccess(t: String) {
-                    println(t)
-                    onPersonaCreated(persona)
-                }
-            })
-    }
+    val params = HashMap<String,Any>()
+    params.put(persona.id,persona)
+    database.patchFirebaseDatabase(listOf("personas"),params,
+        object : onCompletion<String>{
+            override fun onError(e: Exception) {
+                e.printStackTrace()
+            }
+
+            override fun onSuccess(t: String) {
+                println(t)
+                onPersonaCreated(persona)
+            }
+        })
 }

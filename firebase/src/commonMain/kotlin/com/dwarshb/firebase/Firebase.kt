@@ -16,8 +16,12 @@ class Firebase {
         private var DATABASE_URL: String? = null
         private var _currentUser: FirebaseUser? = null
         private var STORAGE_URL: String? = null
+        private var GEMINI_API__KEY: String? = null
+        private var GEMINI_MODEL: String? = "gemini-2.0-flash"
 
         fun getAPIKey() = API_KEY
+        fun getGeminiAPIKey() = GEMINI_API__KEY
+        fun getGeminiModel() = GEMINI_MODEL
         fun getDatabaseURL() = DATABASE_URL
         fun getCurrentUser() = _currentUser
         fun getStorageURL() = STORAGE_URL
@@ -27,6 +31,11 @@ class Firebase {
         API_KEY = apiKey
         DATABASE_URL = databaseUrl
         STORAGE_URL = storageUrl
+    }
+
+    fun setGemini(model: String,key: String) {
+        GEMINI_MODEL = model
+        GEMINI_API__KEY = key
     }
 
     fun setCurrentUser(currentUser: FirebaseUser) {

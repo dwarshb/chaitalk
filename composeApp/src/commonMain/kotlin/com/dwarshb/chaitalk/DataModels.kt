@@ -1,5 +1,8 @@
 package com.dwarshb.chaitalk
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Persona(
     val id: String,
     val name: String,

@@ -37,8 +37,10 @@ enum class Screen {
 @Preview
 fun App(navController: NavHostController = rememberNavController()) {
     MaterialTheme {
+
         val firebase = Firebase()
         firebase.initialize(apiKey = API_KEY, databaseUrl = DATABASE_URL,storageUrl = STORAGE_URL)
+        firebase.setGemini("gemini-2.0-flash",GEMINI_API_KEY)
 
         var personaId by remember { mutableStateOf("") }
         var persona by remember { mutableStateOf<Persona?>(null) }
