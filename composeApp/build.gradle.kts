@@ -57,6 +57,7 @@ kotlin {
         
         androidMain.dependencies {
             implementation(compose.preview)
+            implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
@@ -68,10 +69,20 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(project(":firebase"))
+            implementation(libs.kotlinx.datetime)
+
+            implementation(libs.kamel)
+            implementation(libs.kamel.decoder.image.bitmap)
+
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
+            implementation(libs.ktor.client.okhttp)
         }
     }
 }
