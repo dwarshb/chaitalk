@@ -18,13 +18,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Button
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,7 +70,7 @@ fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Create Your Persona", fontSize = 24.sp,
-            color = MaterialTheme.colors.primary)
+            color = MaterialTheme.colorScheme.primary)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -149,9 +149,9 @@ fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
                     DropdownMenuItem(onClick = {
                         selectedPersonality = personality
                         expanded = false
-                    }) {
+                    }, text = {
                         Text(text = personality)
-                    }
+                    })
                 }
             }
         }

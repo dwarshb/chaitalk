@@ -1,0 +1,24 @@
+CREATE TABLE IF NOT EXISTS User (
+    idToken TEXT NOT NULL ,
+    email TEXT NOT NULL,
+    refreshToken TEXT,
+    name TEXT,
+    localId TEXT,
+    phone TEXT
+);
+insertUser:
+INSERT INTO User(idToken,email,refreshToken,name,localId,phone)
+VALUES(?, ?, ?, ?,?,?);
+
+removeAllUsers:
+DELETE FROM User;
+
+selectAllUsers:
+SELECT User.*
+FROM User;
+
+selectUserByEmail:
+SELECT User.*
+FROM User WHERE email = ?;
+
+

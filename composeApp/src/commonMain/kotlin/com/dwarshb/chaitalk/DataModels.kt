@@ -12,3 +12,12 @@ data class Persona(
     val createdBy: String,
     val createdAt: Long
 )
+
+
+@Serializable
+data class AppUser(
+    var email: String = "",
+    var profile: String = "",
+    var personaList: List<Persona> = emptyList(),
+    var uid: String = ""
+)

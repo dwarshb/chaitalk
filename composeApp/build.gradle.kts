@@ -10,6 +10,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.sqlDelight)
+
 }
 
 kotlin {
@@ -27,7 +29,8 @@ kotlin {
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
-            isStatic = true
+            isStatic = false
+            linkerOpts.add("-lsqlite3")
         }
     }
     
@@ -60,11 +63,13 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.sqldelight.androidDriver)
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material)
+            implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -81,15 +86,39 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+
+            //SqlDelight
+            implementation(libs.sqldelight.coroutines)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.sqldelight.jvmDriver)
+        }
+
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+            implementation(libs.sqldelight.nativeDriver)
+        }
+        jsMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.html.core)
+            implementation(libs.web.worker.driver)
+            implementation(npm("@sqlite.org/sqlite-wasm", "3.43.2-build1"))
+            implementation(npm("copy-webpack-plugin", "11.0.0"))
         }
     }
 }
 
+sqldelight {
+    databases {
+        create("Database") {
+            packageName.set("com.dwarshb.chaitalk")
+        }
+    }
+    linkSqlite = true
+}
 android {
     namespace = "com.dwarshb.chaitalk"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
