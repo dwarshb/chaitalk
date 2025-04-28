@@ -28,7 +28,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun ChatScreen() {
+fun ChatScreen(personaId: String,personaName: String) {
     var userInput by remember { mutableStateOf(TextFieldValue("")) }
     var conversation by remember { mutableStateOf(listOf<String>()) }
     val coroutineScope = rememberCoroutineScope()
@@ -66,8 +66,12 @@ fun ChatScreen() {
             Button(
                 onClick = {
                     if (userInput.text.isNotEmpty()) {
-                        sendMessage(userInput.text, conversation, coroutineScope) { response ->
-                            conversation = conversation + "You: ${userInput.text}" + "Stacy: $response"
+                        sendMessage(userId =  "",
+                            personaId = "",
+                            userMessage = userInput.text,
+                            conversation = conversation,
+                            coroutineScope = coroutineScope) { response ->
+                            conversation = conversation + "You: ${userInput.text}" + "$personaName: $response"
                             userInput = TextFieldValue("") // Clear input after sending
                         }
                     }
@@ -81,37 +85,9 @@ fun ChatScreen() {
 // Function to make the API call to Firebase Function
 fun sendMessage(personaId: String,userId: String, userMessage: String, conversation: List<String>, coroutineScope: CoroutineScope, onMessageSent: (String) -> Unit) {
     coroutineScope.launch {
-
         val params = HashMap<String,Any>()
         params.put("personaId", personaId)
         params.put("sessionId", "$personaId-${userId}")  // Replace with dynamic session ID
         params.put("userMessage", userMessage)
-
-
-        try {
-            val response = withContext(Dispatchers.IO) {
-                client.newCall(request).execute()
-            }
-
-            if (response.isSuccessful) {
-                val responseBody = response.body?.string()
-                val responseJson = JSONObject(responseBody)
-                val aiResponse = responseJson.getString("response")
-                onMessageSent(aiResponse)
-            } else {
-                Toast.makeText(
-                    LocalContext.current,
-                    "Error: ${response.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(
-                LocalContext.current,
-                "Network Error: ${e.localizedMessage}",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
     }
 }
