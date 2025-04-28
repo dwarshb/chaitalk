@@ -28,7 +28,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun ChatScreen(personaId: String,personaName: String) {
+fun ChatScreen(personaId: String,persona: Persona) {
     var userInput by remember { mutableStateOf(TextFieldValue("")) }
     var conversation by remember { mutableStateOf(listOf<String>()) }
     val coroutineScope = rememberCoroutineScope()
@@ -71,7 +71,7 @@ fun ChatScreen(personaId: String,personaName: String) {
                             userMessage = userInput.text,
                             conversation = conversation,
                             coroutineScope = coroutineScope) { response ->
-                            conversation = conversation + "You: ${userInput.text}" + "$personaName: $response"
+                            conversation = conversation + "You: ${userInput.text}" + "${persona.name}: $response"
                             userInput = TextFieldValue("") // Clear input after sending
                         }
                     }

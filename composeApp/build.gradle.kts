@@ -73,7 +73,9 @@ kotlin {
             implementation(libs.kotlinx.datetime)
 
             implementation(libs.kamel)
-            implementation(libs.kamel.decoder.image.bitmap)
+
+            //Navigation
+            implementation(libs.navigation.compose)
 
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)

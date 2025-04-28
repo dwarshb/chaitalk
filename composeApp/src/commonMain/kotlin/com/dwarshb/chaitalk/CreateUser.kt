@@ -1,15 +1,26 @@
 package com.dwarshb.chaitalk
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
@@ -22,29 +33,69 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dwarshb.firebase.Firebase
 import com.dwarshb.firebase.FirebaseDatabase
 import com.dwarshb.firebase.onCompletion
+import io.kamel.image.KamelImage
+import io.kamel.image.asyncPainterResource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
 fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
+    var id by remember { mutableStateOf(TextFieldValue(personaId)) }
     var personaName by remember { mutableStateOf(TextFieldValue("")) }
     var personaDescription by remember { mutableStateOf(TextFieldValue("")) }
     var personalityTrait by remember { mutableStateOf(TextFieldValue("")) }
+    val avatars = remember { (1..12).map { "https://avatar.iran.liara.run/public/$it" } }
+    val selectedAvatar = remember { mutableStateOf<String?>(null) }
+
+    var expanded by remember { mutableStateOf(false) }
+    var selectedPersonality by remember { mutableStateOf("Friendly") }
+    val personalities = listOf("Friendly", "Professional", "Humorous", "Empathetic", "Creative")
+
     val database = FirebaseDatabase()
     val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Create Your own AI", style = MaterialTheme.typography.h5)
+        Text("Create Your Persona", fontSize = 24.sp,
+            color = MaterialTheme.colors.primary)
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier.padding(8.dp).height(200.dp)
+        ) {
+            items(avatars.size) { index ->
+                val avatarUrl = avatars[index]
+                println(avatarUrl)
+                KamelImage(
+                    resource = {asyncPainterResource(avatarUrl)},
+                    contentDescription = "" ,
+                    onFailure = {
+                        it.printStackTrace()
+                    },
+                    modifier = Modifier
+                        .size(80.dp)
+                        .padding(4.dp)
+                        .clickable { selectedAvatar.value = avatarUrl }
+                        .then(
+                            if (selectedAvatar.value == avatarUrl)
+                                Modifier.border(2.dp, Color.Green, CircleShape)
+                            else Modifier
+                        )
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         // Persona Avatar Placeholder (can be replaced with Image Picker)
@@ -56,43 +107,57 @@ fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        OutlinedTextField(
+            value = id,
+            label = { Text("Persona Id") },
+            onValueChange = { id = it },
+            keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(onNext = { /* Move focus to next field */ })
+        )
+
         // Persona Name
         OutlinedTextField(
             value = personaName,
+            label = { Text("Name") },
             onValueChange = { personaName = it },
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
-                .background(Color.Gray.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small)
-                .padding(16.dp),
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(onNext = { /* Move focus to next field */ })
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         // Personality Trait
-        OutlinedTextField(
-            value = personalityTrait,
-            onValueChange = { personalityTrait = it },
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
-                .background(Color.Gray.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small)
-                .padding(16.dp),
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(onNext = { /* Move focus to next field */ })
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
+        Box {
+            OutlinedTextField(
+                value = selectedPersonality,
+                onValueChange = {},
+                label = { Text("Personality") },
+                readOnly = true,
+                modifier = Modifier
+                    .clickable { expanded = true }
+            )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                personalities.forEach { personality ->
+                    DropdownMenuItem(onClick = {
+                        selectedPersonality = personality
+                        expanded = false
+                    }) {
+                        Text(text = personality)
+                    }
+                }
+            }
+        }
 
         // Persona Description
         OutlinedTextField(
             value = personaDescription,
+            label = { Text("Description") },
             onValueChange = { personaDescription = it },
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
-                .background(Color.Gray.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small)
-                .padding(16.dp),
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Done
             ),
