@@ -8,6 +8,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import app.cash.sqldelight.db.SqlDriver
 import com.dwarshb.chaitalk.authentication.AuthenticationView
 import com.dwarshb.chaitalk.authentication.AuthenticationViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -21,7 +22,7 @@ enum class Screen {
 
 @Composable
 @Preview
-fun App(navController: NavHostController = rememberNavController()) {
+fun App(sqlDriver: SqlDriver? = null,navController: NavHostController = rememberNavController()) {
     MaterialTheme {
 
         val firebase = Firebase()
@@ -32,7 +33,7 @@ fun App(navController: NavHostController = rememberNavController()) {
         var persona by remember { mutableStateOf<Persona?>(null) }
 
         var firebaseUser by remember { mutableStateOf(FirebaseUser("", "", "")) }
-        val authenticationViewModel = viewModel { AuthenticationViewModel(firebase, null) }
+        val authenticationViewModel = viewModel { AuthenticationViewModel(firebase, sqlDriver) }
         authenticationViewModel.checkSession(object : onCompletion<User> {
             override fun onSuccess(T: User) {
                 firebaseUser = FirebaseUser(
@@ -51,14 +52,19 @@ fun App(navController: NavHostController = rememberNavController()) {
             startDestination = Screen.Initial.name
         ) {
             composable(route = Screen.Initial.name) {
-                MainScreen{
+                MainScreen(
+                    onChatWithPersona = {
+                        persona = it
+                        navController.navigate(Screen.Chat.name)
+                    },
+                    personaCreateRequest = {
                     personaId = it
-                    if(Firebase.getCurrentUser()==null) {
+                    if(firebaseUser.idToken.isEmpty()) {
                         navController.navigate(Screen.Auth.name)
                     } else {
                         navController.navigate(Screen.CreateUser.name)
                     }
-                }
+                })
             }
             composable(route = Screen.CreateUser.name) {
                CreateUserScreen(personaId) {
@@ -68,7 +74,7 @@ fun App(navController: NavHostController = rememberNavController()) {
 
             }
             composable(route = Screen.Chat.name) {
-                persona?.let { ChatScreen(personaId, it) }
+                persona?.let { ChatScreen(it) }
             }
             composable(route = Screen.Auth.name) {
                 AuthenticationView(authenticationViewModel,

@@ -23,10 +23,13 @@ import chaitalk.composeapp.generated.resources.home_screen_logo
 import com.dwarshb.firebase.FirebaseDatabase
 import com.dwarshb.firebase.onCompletion
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun MainScreen(personaCreateRequest: (String)->Unit) {
+fun MainScreen(personaCreateRequest: (String)->Unit,onChatWithPersona: (Persona)->Unit) {
     var showContent by remember { mutableStateOf(false) }
     var personaId by remember { mutableStateOf("") }
 
@@ -47,12 +50,15 @@ fun MainScreen(personaCreateRequest: (String)->Unit) {
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = {
             coroutineScope.launch {
-                firebaseData.readFirebaseDatabase(listOf("personasId"), "",
+                firebaseData.readFirebaseDatabase(listOf("personas",personaId), "",
                     object : onCompletion<String> {
                         override fun onSuccess(t: String) {
                             println(t)
                             if (t == "null") {
                                 showContent = !showContent
+                            } else {
+                                val persona = Json { ignoreUnknownKeys=true }.decodeFromString<Persona>(t)
+                                onChatWithPersona(persona)
                             }
                         }
 

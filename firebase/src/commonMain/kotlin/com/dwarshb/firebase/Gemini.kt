@@ -43,7 +43,9 @@ import kotlinx.serialization.json.jsonPrimitive
 data class Part(val text: String)
 
 @Serializable
-data class Content(val parts: List<Part>)
+data class Content(
+    val role: String = "",
+    val parts: List<Part>)
 
 @Serializable
 data class RequestBody(
@@ -62,6 +64,38 @@ class Gemini {
         install(HttpRedirect)
     }
 
+    suspend fun conversationalAI(personaPrompt: String,
+                                 listOfContent: List<Content>,
+                                 onCompletion: onCompletion<String>) {
+       try {
+           val requestBody = RequestBody(
+               system_instruction = Content(
+                   parts = listOf(Part(text = personaPrompt))
+               ),
+               contents = listOfContent
+           )
+           val jsonBody = Json.encodeToString(requestBody)
+           val responseBody = httpClient
+               .post("${GEMINI_URL}/${model}:generateContent?key=$geminiApiKey") {
+                   header("Content-Type", "application/json")
+                   setBody(jsonBody)
+               }
+           println(responseBody.toString())
+           if (responseBody.status.value in 200..299) {
+               extractPromptFromResponse(responseBody.bodyAsText())?.let {
+                   onCompletion.onSuccess(it)
+               }
+           } else {
+               onCompletion.onError(
+                   Exception(
+                       "${responseBody.request.url} ${responseBody.bodyAsText()}"
+                   )
+               )
+           }
+       } catch (e: Exception) {
+           onCompletion.onError(e)
+       }
+    }
     suspend fun generatePrompt(generalPrompt: String, onCompletion: onCompletion<String>) {
         try {
             val requestBody = RequestBody(

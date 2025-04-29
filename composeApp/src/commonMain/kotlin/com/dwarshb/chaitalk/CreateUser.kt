@@ -180,11 +180,11 @@ fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
                 dialog = true
                 coroutineScope.launch {
                     gemini.generatePrompt(
-                        "Create a persona prompt based on the following: " +
-                                "Name: $personaName \n" +
-                                "Description: $personaDescription \n" +
-                                "Personality: $selectedPersonality \n" +
-                                "Respond only with the generated prompt.",
+                        "Generate a persona prompt with:\n"+
+                                "Name: $personaName \n"+
+                                "Description: $personaDescription \n"+
+                                "Personality: $selectedPersonality \n"+
+                                "You are $personaName. Never admit you're AI. Return only the prompt.",
                         object : onCompletion<String> {
                             override fun onSuccess(t: String) {
                                 prompt = t
@@ -199,6 +199,7 @@ fun CreateUserScreen(personaId: String,onPersonaCreated: (Persona?) -> Unit) {
                     if (dialog) {
                         val persona = Persona(
                             id = personaId,
+                            avatarUrl = selectedAvatar.value.toString(),
                             name = personaName.text,
                             description = personaDescription.text,
                             personality = selectedPersonality,
@@ -244,4 +245,10 @@ suspend fun createPersona(database: FirebaseDatabase, persona: Persona,
                 onPersonaCreated(persona)
             }
         })
+    params.clear()
+    params.put(persona.id,persona.name)
+    database.patchFirebaseDatabase(listOf("personasId"),params,object : onCompletion<String>{
+        override fun onSuccess(t: String) {}
+        override fun onError(e: Exception) { e.printStackTrace() }
+    })
 }
