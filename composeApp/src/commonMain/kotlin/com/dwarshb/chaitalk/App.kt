@@ -99,7 +99,7 @@ fun App(sqlDriver: SqlDriver? = null,navController: NavHostController = remember
             composable(route = Screen.CreateUser.name) {
                CreateUserScreen(personaId) {
                    persona = it
-                   navController.navigate(Screen.Chat.name)
+                   navController.navigate(Screen.Initial.name)
                }
 
             }

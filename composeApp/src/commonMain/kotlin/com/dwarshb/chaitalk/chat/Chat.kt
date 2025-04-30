@@ -65,7 +65,7 @@ fun ChatScreen(persona: Persona, onBackPressed: ()->Unit) {
     val userId = Firebase.getCurrentUser()?.uid?:""
     val gemini = Gemini()
     val firebaseDatabase = FirebaseDatabase()
-    val chatViewModel : ChatViewModel = viewModel()
+    val chatViewModel : ChatViewModel = ChatViewModel()
     val scope = rememberCoroutineScope()
     var messages = remember { chatViewModel.messages }.collectAsState()
     LaunchedEffect(Unit) {

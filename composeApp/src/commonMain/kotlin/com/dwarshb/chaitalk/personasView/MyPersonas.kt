@@ -37,7 +37,7 @@ import com.dwarshb.firebase.onCompletion
 @Composable
 fun MyPersonas(onBackPressed: ()->Unit) {
     val firebaseUser = Firebase.getCurrentUser()
-    val myPersonaViewModel : MyPersonaViewModel = viewModel()
+    val myPersonaViewModel = MyPersonaViewModel()
     val personaList = myPersonaViewModel.personas.collectAsState()
     val clipboardManager = LocalClipboardManager.current
 

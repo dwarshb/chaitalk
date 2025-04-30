@@ -208,7 +208,7 @@ fun MainScreen(firebaseUser: FirebaseUser,
                         OutlinedTextField(
                             value = geminiKey.value,
                             onValueChange = {geminiKey.value = it},
-                            label = { Text("Enter Firebase API Key") }
+                            label = { Text("Enter Gemini API Key") }
                         )
                         Button(onClick = { expanded = true }) {
                             Text(selectedModel.value)
