@@ -24,6 +24,7 @@ import app.cash.sqldelight.db.SqlDriver
 import com.dwarshb.chaitalk.authentication.AuthenticationView
 import com.dwarshb.chaitalk.authentication.AuthenticationViewModel
 import com.dwarshb.chaitalk.chat.ChatScreen
+import com.dwarshb.chaitalk.personasView.MyPersonas
 import com.dwarshb.chaitalk.recentChats.RecentChats
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.dwarshb.firebase.Firebase
@@ -31,7 +32,7 @@ import com.dwarshb.firebase.FirebaseUser
 import com.dwarshb.firebase.onCompletion
 
 enum class Screen {
-    Initial,CreateUser,Chat,Auth,RecentChats
+    Initial,CreateUser,Chat,Auth,RecentChats,UserPersonas
 }
 
 
@@ -44,8 +45,9 @@ fun App(sqlDriver: SqlDriver? = null,navController: NavHostController = remember
         val firebase = Firebase()
         var geminiModel : MutableState<String> = remember { mutableStateOf("gemini-2.0-flash") }
 
-        firebase.initialize(apiKey = API_KEY, databaseUrl = DATABASE_URL,storageUrl = STORAGE_URL)
-        firebase.setGemini(geminiModel.value,GEMINI_API_KEY)
+        firebase.initialize(apiKey = firebaseAPIKey.value,
+            databaseUrl = firebaseDatabaseUrl.value,storageUrl = STORAGE_URL)
+        firebase.setGemini(geminiModel.value,geminiKey.value)
 
         var personaId by remember { mutableStateOf("") }
         var persona by remember { mutableStateOf<Persona?>(null) }
@@ -71,7 +73,13 @@ fun App(sqlDriver: SqlDriver? = null,navController: NavHostController = remember
         ) {
             composable(route = Screen.Initial.name) {
                 MainScreen(firebaseUser,
+                    firebaseAPIKey = firebaseAPIKey,
+                    firebaseDatabaseUrl = firebaseDatabaseUrl ,
+                    geminiKey = geminiKey,
                     geminiModel,
+                    openUserPersonas = {
+                        navController.navigate(Screen.UserPersonas.name)
+                    },
                     openRecentChats = {
                         navController.navigate(Screen.RecentChats.name)
                     },
@@ -135,6 +143,11 @@ fun App(sqlDriver: SqlDriver? = null,navController: NavHostController = remember
                         persona = it
                         navController.navigate(Screen.Chat.name)
                     })
+            }
+            composable(route = Screen.UserPersonas.name) {
+                MyPersonas {
+                    navController.popBackStack()
+                }
             }
         }
     }

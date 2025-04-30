@@ -64,7 +64,6 @@ class ChatViewModel : ViewModel() {
             firebaseDatabase.patchFirebaseDatabase(listOf("chats", userId, personaId, "messages"),
                 params, object : onCompletion<String> {
                     override fun onSuccess(t: String) {
-                        _messages.value[message.id.toString()] = message
                         onCompletion.onSuccess(message)
                     }
 

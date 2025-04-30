@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dwarshb.chaitalk.Persona
 import com.dwarshb.firebase.Firebase
 import com.dwarshb.firebase.onCompletion
@@ -48,7 +49,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun RecentChats(onBackPressed:()->Unit,
                 onChatSelected: (Persona)->Unit,
-                viewModel: RecentChatsViewModel = RecentChatsViewModel()) {
+                viewModel: RecentChatsViewModel = viewModel()) {
     val chats by viewModel.recentChats.collectAsState()
     val userId = Firebase.getCurrentUser()?.uid
     val clipboardManager = LocalClipboardManager.current

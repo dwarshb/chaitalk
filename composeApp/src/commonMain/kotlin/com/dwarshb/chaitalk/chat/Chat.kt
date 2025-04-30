@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dwarshb.chaitalk.ChatMessage
 import com.dwarshb.chaitalk.Persona
 import com.dwarshb.firebase.Content
@@ -64,9 +65,9 @@ fun ChatScreen(persona: Persona, onBackPressed: ()->Unit) {
     val userId = Firebase.getCurrentUser()?.uid?:""
     val gemini = Gemini()
     val firebaseDatabase = FirebaseDatabase()
-    val chatViewModel = ChatViewModel()
+    val chatViewModel : ChatViewModel = viewModel()
     val scope = rememberCoroutineScope()
-    val messages by chatViewModel.messages.collectAsState()
+    var messages = remember { chatViewModel.messages }.collectAsState()
     LaunchedEffect(Unit) {
         chatViewModel.fetchMessages(userId,persona.id)
     }
@@ -94,7 +95,7 @@ fun ChatScreen(persona: Persona, onBackPressed: ()->Unit) {
             modifier = Modifier.weight(1f).fillMaxWidth(),
             reverseLayout = true
         ) {
-            items(messages.values.reversed()) { message ->
+            items(messages.value.values.sortedBy { it.id }.reversed()) { message ->
                 AnimatedVisibility(
                     visible = true,
                     enter = fadeIn() + expandVertically(),
@@ -138,6 +139,7 @@ fun ChatScreen(persona: Persona, onBackPressed: ()->Unit) {
                                 personaId = persona.id,
                                 onCompletion = object : onCompletion<ChatMessage>{
                                     override fun onSuccess(t: ChatMessage) {
+                                        messages.value[t.id.toString()] = t
                                         newMessage = ""
                                     }
 
@@ -146,39 +148,44 @@ fun ChatScreen(persona: Persona, onBackPressed: ()->Unit) {
                                     }
                                 })
                             isSendingText = "AI Thinking..."
-                            var aiMessage: ChatMessage? = null
+
                             gemini.conversationalAI(persona.personalityPrompt,
-                                createContentFromConversation(messages.values.toMutableList()),
+                                createContentFromConversation(messages.value.values.toMutableList()),
                                 object : onCompletion<String> {
                                     override fun onSuccess(t: String) {
-                                        aiMessage = ChatMessage(
+                                        val aiMessage = ChatMessage(
                                             id = Clock.System.now().toEpochMilliseconds(),
-                                            role="model",
+                                            role = "model",
                                             content = t,
                                             avatarUrl = persona.avatarUrl
                                         )
+
+                                        scope.launch {
+                                            chatViewModel.sendMessageToFirebase(
+                                                firebaseDatabase = firebaseDatabase,
+                                                avatarUrl = persona.avatarUrl,
+                                                content = aiMessage.content,
+                                                userId = userId,
+                                                role = "model",
+                                                personaId = persona.id,
+                                                onCompletion = object : onCompletion<ChatMessage> {
+                                                    override fun onSuccess(t: ChatMessage) {
+                                                        messages.value[t.id.toString()] = t
+                                                    }
+
+                                                    override fun onError(e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
+                                                }
+                                            )
+                                        }
                                     }
 
                                     override fun onError(e: Exception) {
                                         e.printStackTrace()
                                     }
-                                })
-                            chatViewModel.sendMessageToFirebase(
-                                firebaseDatabase = firebaseDatabase,
-                                avatarUrl = persona.avatarUrl,
-                                content = aiMessage?.content?:"",
-                                userId = userId,
-                                role = "model",
-                                personaId = persona.id,
-                                onCompletion = object : onCompletion<ChatMessage>{
-                                    override fun onSuccess(t: ChatMessage) {
-                                        newMessage = ""
-                                    }
-
-                                    override fun onError(e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                })
+                                }
+                            )
                             isSendingText = "isSending..."
                             isSending = false
                         }
