@@ -18,12 +18,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.dwarshb.firebase.Content
 import com.dwarshb.firebase.Firebase
@@ -45,32 +50,41 @@ import com.dwarshb.firebase.Part
 import com.dwarshb.firebase.onCompletion
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.long
 
 
-val firebaseDatabase = FirebaseDatabase()
-val gemini = Gemini()
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(persona: Persona) {
+fun ChatScreen(persona: Persona, onBackPressed: ()->Unit) {
     var messages = remember { mutableStateListOf<ChatMessage>() }
     var newMessage by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
     var isSendingText by remember { mutableStateOf("isSending...") }
     val userId = Firebase.getCurrentUser()?.uid?:""
+    val gemini = Gemini()
+    val firebaseDatabase = FirebaseDatabase()
+
     val scope = rememberCoroutineScope()
     val json = Json { ignoreUnknownKeys = true }
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("chAItalk", style = MaterialTheme.typography.headlineSmall)
-
+        TopAppBar(
+            title =  {
+                Row {
+                    KamelImage(resource = { asyncPainterResource(persona.avatarUrl)},"avatar",
+                        modifier = Modifier.size(32.dp))
+                    Text(persona.name, modifier = Modifier.padding(start = 16.dp))
+                }
+            },
+            navigationIcon = {
+                IconButton(onClick = {
+                    onBackPressed()
+                }){
+                    Icon(Icons.AutoMirrored.Default.ArrowBack,"Go Back")
+                }
+            }
+        )
         Spacer(Modifier.height(16.dp))
 
         LazyColumn(
@@ -100,11 +114,11 @@ fun ChatScreen(persona: Persona) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BasicTextField(
+            OutlinedTextField(
                 value = newMessage,
                 onValueChange = { newMessage = it },
                 modifier = Modifier.weight(1f).padding(12.dp),
-                singleLine = true
+                placeholder = {Text("Enter your Message")}
             )
 
             Button(
@@ -113,10 +127,13 @@ fun ChatScreen(persona: Persona) {
                         scope.launch {
                             isSending = true
                             sendMessageToFirebase(
+                                firebaseDatabase = firebaseDatabase,
                                 avatarUrl = "",
+                                role = "user",
                                 content = newMessage,
-                                userIdPersonaId = userId+"_"+persona.id,
-                                object : onCompletion<ChatMessage>{
+                                userId = userId,
+                                personaId = persona.id,
+                                onCompletion = object : onCompletion<ChatMessage>{
                                     override fun onSuccess(t: ChatMessage) {
                                         messages.add(t)
                                         newMessage = ""
@@ -127,17 +144,34 @@ fun ChatScreen(persona: Persona) {
                                     }
                                 })
                             isSendingText = "AI Thinking..."
+                            var aiMessage: ChatMessage? = null
                             gemini.conversationalAI(persona.personalityPrompt,
                                 createContentFromConversation(messages),
                                 object : onCompletion<String> {
                                     override fun onSuccess(t: String) {
-                                        val aiMessage = ChatMessage(
+                                        aiMessage = ChatMessage(
                                             id = Clock.System.now().toEpochMilliseconds(),
                                             role="model",
                                             content = t,
                                             avatarUrl = persona.avatarUrl
                                         )
-                                        messages.add(aiMessage)
+                                    }
+
+                                    override fun onError(e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                })
+                            sendMessageToFirebase(
+                                firebaseDatabase = firebaseDatabase,
+                                avatarUrl = persona.avatarUrl,
+                                content = aiMessage?.content?:"",
+                                userId = userId,
+                                role = "model",
+                                personaId = persona.id,
+                                onCompletion = object : onCompletion<ChatMessage>{
+                                    override fun onSuccess(t: ChatMessage) {
+                                        messages.add(t)
+                                        newMessage = ""
                                     }
 
                                     override fun onError(e: Exception) {
@@ -197,31 +231,47 @@ fun MessageItem(message: ChatMessage) {
     }
 }
 
-suspend fun sendMessageToFirebase(avatarUrl: String,content: String, userIdPersonaId: String,
-                                  onCompletion: onCompletion<ChatMessage>) {
+suspend fun sendMessageToFirebase(
+    firebaseDatabase: FirebaseDatabase,
+    role: String,
+    avatarUrl: String,content: String, userId:String,
+    personaId: String, onCompletion: onCompletion<ChatMessage>) {
     val params = HashMap<String,Any>()
     val message = ChatMessage(
         id = Clock.System.now().toEpochMilliseconds(),
-        role = "user",
+        role = role,
         content = content,
         avatarUrl = avatarUrl)
     println("Message: ${message}")
     params.put(message.id.toString(),message)
-    firebaseDatabase.patchFirebaseDatabase(listOf("chats",userIdPersonaId,"messages"),
-        params, object : onCompletion<String>{
-            override fun onSuccess(t: String) {
-                onCompletion.onSuccess(message)
-            }
+    // Save the individual message
+    if (userId.isNotEmpty()) {
+        firebaseDatabase.patchFirebaseDatabase(listOf("chats", userId, personaId, "messages"),
+            params, object : onCompletion<String> {
+                override fun onSuccess(t: String) {
+                    onCompletion.onSuccess(message)
+                }
 
-            override fun onError(e: Exception) {
-                e.printStackTrace()
-                onCompletion.onError(e)
-            }
-        })
+                override fun onError(e: Exception) {
+                    e.printStackTrace()
+                    onCompletion.onError(e)
+                }
+            })
 
-//    val message = buildJsonObject {
-//        put("role", "user")
-//        put("content", content)
-//        put("avatar", "https://avatar.iran.liara.run/public/${(0..1000).random()}")
-//    }
+        // Update last message
+        params.clear()
+        params.put("lastMessage", message)
+        firebaseDatabase.patchFirebaseDatabase(listOf("chats", userId, personaId),
+            params, object : onCompletion<String> {
+                override fun onSuccess(t: String) {
+                    println("Updated Last Message")
+                }
+
+                override fun onError(e: Exception) {
+                    e.printStackTrace()
+                }
+            })
+    } else{
+        onCompletion.onSuccess(message)
+    }
 }

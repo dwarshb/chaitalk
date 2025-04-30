@@ -245,10 +245,4 @@ suspend fun createPersona(database: FirebaseDatabase, persona: Persona,
                 onPersonaCreated(persona)
             }
         })
-    params.clear()
-    params.put(persona.id,persona.name)
-    database.patchFirebaseDatabase(listOf("personasId"),params,object : onCompletion<String>{
-        override fun onSuccess(t: String) {}
-        override fun onError(e: Exception) { e.printStackTrace() }
-    })
 }
