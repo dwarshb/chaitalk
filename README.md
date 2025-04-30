@@ -91,6 +91,16 @@ You can open the web application by running the `:composeApp:wasmJsBrowserDevelo
 
 ---
 
+### Reference:
+https://ai.google.dev/gemini-api/docs/text-generation#supported-models
+
+https://kmp.jetbrains.com/#newProject
+
+https://firebase.google.com/docs/reference/rest/auth
+
+https://firebase.google.com/docs/reference/rest/database
+
+---
 
 <div style="width:100%">
 	<div style="width:50%; display:inline-block">
