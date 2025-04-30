@@ -110,10 +110,8 @@ fun MainScreen(firebaseUser: FirebaseUser,
                                 if (t == "null") {
                                     showContent = !showContent
                                 } else {
-                                    val persona =
-                                        Json { ignoreUnknownKeys = true }.decodeFromString<Persona>(
-                                            t
-                                        )
+                                    val persona = Json { ignoreUnknownKeys = true }
+                                        .decodeFromString<Persona>(t)
                                     onChatWithPersona(persona)
                                 }
                             }

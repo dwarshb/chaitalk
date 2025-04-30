@@ -36,15 +36,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.dwarshb.chaitalk.Persona
 import com.dwarshb.firebase.Firebase
+import com.dwarshb.firebase.onCompletion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecentChats(onBackPressed:()->Unit,
-                onChatSelected: (String)->Unit,
+                onChatSelected: (Persona)->Unit,
                 viewModel: RecentChatsViewModel = RecentChatsViewModel()) {
     val chats by viewModel.recentChats.collectAsState()
     val userId = Firebase.getCurrentUser()?.uid
@@ -96,14 +99,26 @@ fun RecentChats(onBackPressed:()->Unit,
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { onChatSelected(personaId) }
+                                .clickable {
+                                    viewModel.getPersona(personaId, object : onCompletion<Persona>{
+                                        override fun onSuccess(t: Persona) {
+                                            onChatSelected(t)                                        }
+
+                                        override fun onError(e: Exception) {
+                                            //Todo show error dialog
+                                        }
+                                    })
+                                }
                                 .padding(16.dp)
                         ) {
                             Text(
                                 "PersonaId: $personaId",
                                 style = MaterialTheme.typography.titleMedium
                             )
-                            Text(lastMessage.content, style = MaterialTheme.typography.bodyMedium)
+                            Text(lastMessage.content,
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 2,
+                                style = MaterialTheme.typography.bodyMedium)
                         }
                         IconButton(
                             modifier = Modifier.align(Alignment.CenterVertically),

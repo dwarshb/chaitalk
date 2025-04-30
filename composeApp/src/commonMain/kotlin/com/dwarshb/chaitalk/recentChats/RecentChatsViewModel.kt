@@ -3,6 +3,7 @@ package com.dwarshb.chaitalk.recentChats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dwarshb.chaitalk.ChatMessage
+import com.dwarshb.chaitalk.Persona
 import com.dwarshb.firebase.FirebaseDatabase
 import com.dwarshb.firebase.onCompletion
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,26 @@ class RecentChatsViewModel : ViewModel() {
                     }
 
                     override fun onError(e: Exception) {
+                        e.printStackTrace()
+                    }
+                })
+        }
+    }
+
+    fun getPersona(personaId: String,onCompletion: onCompletion<Persona>) {
+        viewModelScope.launch {
+            firebaseDatabase.readFirebaseDatabase(listOf("personas", personaId), "",
+                object : onCompletion<String> {
+                    override fun onSuccess(t: String) {
+                        if (t!="null") {
+                            val persona = Json { ignoreUnknownKeys = true }
+                                .decodeFromString<Persona>(t)
+                            onCompletion.onSuccess(persona)
+                        }
+                    }
+
+                    override fun onError(e: Exception) {
+                        onCompletion.onError(e)
                         e.printStackTrace()
                     }
                 })

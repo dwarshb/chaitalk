@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
@@ -24,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import app.cash.sqldelight.db.SqlDriver
 import com.dwarshb.chaitalk.authentication.AuthenticationView
 import com.dwarshb.chaitalk.authentication.AuthenticationViewModel
+import com.dwarshb.chaitalk.chat.ChatScreen
 import com.dwarshb.chaitalk.recentChats.RecentChats
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.dwarshb.firebase.Firebase
@@ -131,7 +131,10 @@ fun App(sqlDriver: SqlDriver? = null,navController: NavHostController = remember
             }
             composable(route = Screen.RecentChats.name) {
                 RecentChats(onBackPressed = { navController.popBackStack() },
-                    onChatSelected = {},)
+                    onChatSelected = {
+                        persona = it
+                        navController.navigate(Screen.Chat.name)
+                    })
             }
         }
     }
